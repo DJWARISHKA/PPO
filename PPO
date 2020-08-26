@@ -1,0 +1,103 @@
+ void addtov_ФП54(DataGridViewRow^ row) {
+				 if (chPrint->Checked) {
+					 t400Class a;
+					 String^ x;
+					 x = PPO->GetCmdКлиент();
+					 PPO->CmdКлиент("SELECT * FROM Товары WHERE (Код LIKE " + Convert::ToString(row->Cells[0]->Value) + ")");
+					 dataTable10->Clear();
+					 PPO->FillКлиент(dataTable10);
+					 PPO->CmdКлиент(x);
+					 x = "add_plu;" + Convert::ToString(row->Cells[0]->Value);
+					 if (Convert::ToBoolean(row->Cells[7]->Value))
+						 x += ";1;";
+					 else x += ";0;";
+					 if (row->Cells[2]->Value->ToString()->Contains(",") || row->Cells[2]->Value->ToString()->Contains("."))
+						 x += "1;";
+					 else x += "0;";
+					 x += "0;0;1;1;";
+					 x += todot(Convert::ToString(row->Cells[3]->Value)) + ";";
+					 if (Convert::ToString(row->Cells[6]->Value) == "")
+						 x += "0;";
+					 else x += Convert::ToString(row->Cells[6]->Value) + ";";
+					 x += Convert::ToString(row->Cells[1]->Value) + ";";
+					 if (row->Cells[2]->Value->ToString()->Contains(",") || row->Cells[2]->Value->ToString()->Contains("."))
+						 x += row->Cells[2]->Value->ToString()->Split(',')[0] + "." + row->Cells[2]->Value->ToString()->Split(',')[1]->PadRight(3, '0') + ";";
+					 else x += row->Cells[2]->Value->ToString() + ";";
+					 a.t400me((String^%)x);
+					 MiniFpErrors::GetError(x);
+					 x = "sale_plu;0;0;0;";
+					 if (row->Cells[2]->Value->ToString()->Contains(",") || row->Cells[2]->Value->ToString()->Contains("."))
+						 x += row->Cells[2]->Value->ToString()->Split(',')[0] + "." + row->Cells[2]->Value->ToString()->Split(',')[1]->PadRight(3, '0') + ";";
+					 else x += row->Cells[2]->Value->ToString()->Split(',')[0] + ".000" + ";";
+					 x += Convert::ToString(row->Cells[0]->Value) + ";";
+					 if (!a.t400me((String^%)x))
+						 MiniFpErrors::GetError(x);
+					 sum = sum + Convert::ToDouble(row->Cells[4]->Value);
+				 }
+			 }
+ void addtov_Мария(DataGridViewRow^ row)
+			 {
+				 String^ x;
+				 String^ tmp = "SELECT Товары.Код, Товары.Наименование, Товары.Наимкр, Товары.[Ед_изм], Товары.Производитель, Товары.Артикул, Товары.Фискальный, Товары.PLU, Товары.Поштучно, Товары.[В_упаковке], Товары.[Цена_шт], Товары.[Штрих_код], Товары.Вес, Товары.Ширина, Товары.Высота, Товары.Длинна,	Товары.Упаковка, Товары.[Код_валюты], Товары.[Цена_валютная], Товары.[Цена_розничная], Товары.[Цена_оптовая], Товары.Описание, Товары.Фото,			Товары.Аналог, [Склад_инвент].Колво AS Остаток, Склады.[Код_обслуж_магаз] FROM Склады, Товары, Склад_инвент WHERE(Склады.Код = Склад_инвент.Код_склада) AND(Val(Склад_инвент.Код_товара) = Товары.Код) AND (Товары.Активный = True) AND (Склады.Код_обслуж_магаз = '" + cShop->Text + "') AND (Товары.Код LIKE " + Convert::ToString(row->Cells[0]->Value) + ")";
+				 dataTable10->Clear();
+				 PPO->CmdТовары(tmp);
+				 PPO->FillТовары(dataTable10);//Список товары
+				 x = "FISC" + row->Cells[1]->Value->ToString()->PadRight(12, ' ');//название
+				 x += deldot(row->Cells[4]->Value->ToString())->PadLeft(9, '0') + deldot(row->Cells[3]->Value->ToString())->PadLeft(9, '0');//сумма, цена
+				 if (row->Cells[2]->Value->ToString()->Contains(",") || row->Cells[2]->Value->ToString()->Contains("."))
+				 {
+					 x += row->Cells[2]->Value->ToString()->Split(',')[0]->PadLeft(2, '0') + row->Cells[2]->Value->ToString()->Split(',')[1]->PadRight(3, '0');
+
+					 x += "00";
+				 }
+				 else
+				 {
+					 x += row->Cells[2]->Value->ToString()->PadLeft(5, '0');//кол-во товара
+					 x += "10";
+				 }
+				 if (Convert::ToBoolean(row->Cells[7]->Value))
+					 x += "А02000" + "000000" + "000000" + "000000" + "000000" + "000000" + "000000" + "000000";//это НДС 20% нужно улучшить
+				 else
+					 x += "000000" + "000000" + "000000" + "000000" + "000000" + "000000" + "000000" + "000000";//нули это без НДС нужно улучшить
+				 if (Convert::ToInt16(row->Cells[5]->Value) / 1000 < 10)
+					 x += (Convert::ToInt16(row->Cells[5]->Value) / 1000).ToString();
+				 else x += ('A' + Convert::ToInt16(row->Cells[5]->Value) / 1000).ToString();//первая часть артикула
+				 x += (Convert::ToInt16(row->Cells[5]->Value) % 1000).ToString()->PadLeft(3, '0');//вторая чаасть
+				 x += "00000000000000000000000";
+				 //FISCaaaaaaaaaaaa\000000008\000000008\00001\1\0\0000000000000000000000000000000000000000000000000310
+				 //FISCaaaaaaaaaaaa\000002400\000000800\00003\1\0\А02000000000000000000000000000000000000000000000031000000000000000000000000
+				 //FISCaaaaaaaaaaaa0000008000000008000000110А02000000000000000000000000000000000000000000000031000000000000000000000000
+				 //COMP000000080000000000000000000000000000000000000000000000000800
+				 PortPPO->sendCmd(x);
+			 }
+			 void closeport_ФП54() {
+				 if (chPrint->Checked) {
+					 t400Class a;
+					 String^ x, ^ summ;
+					 summ = Convert::ToString(Convert::ToDouble(tСскидки->Text) + Convert::ToDouble(tАванс->Text));
+					 x = "discount_surcharge;1;1;1;" + todot(tПскидки->Text) + ";";
+					 a.t400me((String^%)x);
+					 MiniFpErrors::GetError(x);
+					 if (cВидопл->Text == "Наличными")
+						 x = "pay;0;" + todot(summ) + ";";
+					 else x = "pay;1;" + todot(summ) + ";";
+					 if (!a.t400me((String^%)x))
+						 MiniFpErrors::GetError(x);
+					 x = "open_cashbox";
+					 a.t400me((String^%)x);
+					 MiniFpErrors::GetError(x);
+					 /* x = "cashier_registration;0;0;";
+					  a.t400me((String^%)x);
+					  MiniFpErrors::GetError(x);*/
+				 }
+			 }
+			 void closeport_Мария() {
+				 String^ str;
+				 str = deldot(tСумма->Text)->PadLeft(10, '0');
+				 if (cВидопл->Text == "Наличными") {
+					 PortPPO->sendCmd("COMP" + str + "0000000000" + "0000000000" + "0000000000" + "0000000000" + deldot(tАванс->Text)->PadLeft(10, '0'));
+				 }
+				 else {
+					 PortPPO->sendCmd("COMP" + str + "0000000000" + "0000000000" + "0000000000" + str + "0000000000");
+				 }
+			 }
